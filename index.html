@@ -512,6 +512,29 @@
   }
   .lightbox-close:hover { border-color: var(--accent); color: var(--accent); }
 
+  /* ── MANUAL ADD NAMES ── */
+  .manual-add-box {
+    border-top: 1px dashed var(--border); padding-top: 12px; margin-top: 2px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  textarea#manualNamesInput {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 7px; color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+    padding: 9px 11px; outline: none; resize: vertical;
+    min-height: 56px; transition: border-color 0.2s; line-height: 1.5;
+  }
+  textarea#manualNamesInput:focus { border-color: var(--accent); }
+  .manual-add-btn {
+    background: var(--surface2); border: 1px solid var(--accent);
+    color: var(--accent); border-radius: 7px; padding: 9px 12px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: background 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .manual-add-btn:hover { background: rgba(212,168,67,0.12); }
+  .manual-add-hint { font-size: 11px; color: var(--muted); line-height: 1.4; }
+
   /* ── MISC ── */
   ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -632,6 +655,14 @@
           </div>
         </div>
         <div id="statsBar" class="stats-bar" style="display:none"></div>
+
+        <!-- Manually add a few missing names -->
+        <div class="manual-add-box">
+          <label class="field-label">Add Missing Names</label>
+          <textarea id="manualNamesInput" placeholder="Type one name per line (e.g. names the spreadsheet was missing), then tap Add"></textarea>
+          <button type="button" class="manual-add-btn" id="addManualNamesBtn">+ Add to List</button>
+          <div class="manual-add-hint">Added names go to the end of the list and get their own ID number. They follow the same font, color and capitalize settings as the rest.</div>
+        </div>
       </div>
     </div>
 
@@ -1184,6 +1215,40 @@ document.getElementById('colModalConfirm').addEventListener('click', () => {
   document.getElementById('csvZone').classList.add('done');
   document.querySelector('#csvZone .uz-label').textContent = `✓ ${names.length} names loaded`;
   updateStatsBar(); updateCertPreview(); clearMsg(); scheduleLivePreview();
+});
+
+// ════════════════════════════
+//  MANUALLY ADD MISSING NAMES
+// ════════════════════════════
+document.getElementById("addManualNamesBtn").addEventListener("click", () => {
+  const ta = document.getElementById("manualNamesInput");
+  const lines = ta.value.split("\n").map(s => s.trim()).filter(Boolean);
+  if (!lines.length) return;
+
+  const insertedAt = names.length;
+  lines.forEach(raw => {
+    originalNames.push(raw);
+    names.push(capitalizeNames ? smartTitle(raw) : raw);
+  });
+
+  ta.value = "";
+  document.getElementById('csvZone').classList.add('done');
+  updateStatsBar();
+  updateCertPreview();
+  clearMsg();
+  showSuccess(`✅ Added ${lines.length} name${lines.length !== 1 ? "s" : ""} to the list.`);
+
+  // Jump preview to the first newly-added name so the user can confirm it looks right
+  previewIndex = insertedAt;
+  if (templateImg) updatePreview();
+});
+
+// Allow Ctrl/Cmd+Enter inside the textarea to trigger Add, for convenience
+document.getElementById("manualNamesInput").addEventListener("keydown", e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+    e.preventDefault();
+    document.getElementById("addManualNamesBtn").click();
+  }
 });
 
 // ════════════════════════════
